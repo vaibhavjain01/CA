@@ -28,7 +28,8 @@ public class VMCharacteristics {
 	int priority;
 	String vmm;
 	VMScheduler scheduler;
-	
+	int cpuUtilisation[];
+	int cpuUtilisationThreshold;
 
 	/**
 	 * Creates a new VMCharacteristics object
@@ -60,6 +61,8 @@ public class VMCharacteristics {
 		this.vmm = vmm;
 		this.priority= priority;
 		this.scheduler = scheduler;
+		this.cpuUtilisation = new int[this.cpus];
+		this.cpuUtilisationThreshold = 100;
 	}
 
 	/**
@@ -204,5 +207,36 @@ public class VMCharacteristics {
 	 */
 	public void setPriority(int priority) {
 		this.priority = priority;		
+	}
+	
+	public void setCpuUtilisation(int cpuUtilisation[]) {
+		for(int ctr = 0; ctr < cpuUtilisation.length; ctr++) {
+			this.cpuUtilisation[ctr] = cpuUtilisation[ctr];
+ 		}
+		return;
+	}
+	
+	public int[] getCpuUtilisation() {
+		return this.cpuUtilisation;
+	}
+	
+	public void setCpuUtilisationByCPU(int cpu, int utilisation) {
+		this.cpuUtilisation[cpu] = utilisation;
+	}
+	
+	public int getCpuUtilisationByCPU(int cpu) {
+		return this.cpuUtilisation[cpu];
+	}
+
+	public boolean incCpuUtilisation(int cpu, int utilisation) {
+		if((this.cpuUtilisation[cpu] + utilisation) < this.cpuUtilisationThreshold) {
+			this.cpuUtilisation[cpu] += utilisation;
+			return true;
+		}
+		return false;
+	}
+	
+	public void decCpuUtilisation(int cpu, int utilisation) {
+		this.cpuUtilisation[cpu] -= utilisation;
 	}
 }

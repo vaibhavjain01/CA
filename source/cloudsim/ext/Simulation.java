@@ -21,12 +21,20 @@ import javax.swing.JOptionPane;
 
 import cloudsim.Cloudlet;
 import cloudsim.CloudletList;
+import cloudsim.CpuSharedAllocationPolicy;
 import cloudsim.DataCenter;
+import cloudsim.DataCenter_Cpu;
 import cloudsim.DatacenterCharacteristics;
+import cloudsim.DatacenterCharacteristics_Cpu;
 import cloudsim.Host;
+import cloudsim.Host_Cpu;
+import cloudsim.MachineList_Cpu;
+import cloudsim.PEList_Cpu;
+import cloudsim.PE_Cpu;
 import cloudsim.SimpleBWProvisioner;
 import cloudsim.SimpleMemoryProvisioner;
 import cloudsim.SimpleVMProvisioner;
+import cloudsim.SimpleVMProvisioner_Cpu;
 import cloudsim.SpaceSharedAllocationPolicy;
 import cloudsim.TimeSharedAllocationPolicy;
 import cloudsim.TimeSharedVMScheduler;
@@ -340,22 +348,73 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 		return list;
 	}
 
+	@SuppressWarnings("unchecked")
+	private DataCenter_Cpu createDatacenterCpu(DataCenterUIElement dc) {
+		
+		VMMAllocationPolicy vmPolicy;
+		DataCenter_Cpu datacenter = null;
+		double time_zone = WorldGeometry.getInstance().getTimeZone(dc.getRegion());
+		LinkedList storageList = new LinkedList(); //we are not adding SAN devices by now
+		
+		for (int mcNo = 0; mcNo < dc.getMachineList().size(); mcNo++){
+			
+			MachineUIElement mc = dc.getMachineList().get(mcNo);
+			if (mc.getVmAllocationPolicy().equals(MachineUIElement.VmAllocationPolicy.CPU_SHARED)) {
+				MachineList_Cpu mList = new MachineList_Cpu();
+				PEList_Cpu peList1 = new PEList_Cpu();
+				for (int i = 0; i < mc.getProcessors(); i++){
+					peList1.add(new PE_Cpu(i, mc.getSpeed()));
+				}
+				
+				vmPolicy = new CpuSharedAllocationPolicy(peList1);
+				
+				Host_Cpu h = new Host_Cpu(mcNo, 
+						  mc.getMemory(), 
+						  mc.getStorage(), 
+						  mc.getBw(), 
+						  peList1,
+						  new SimpleMemoryProvisioner(), 
+						  new SimpleBWProvisioner(),
+						  vmPolicy);
+				mList.add(h);
+				
+				DatacenterCharacteristics_Cpu resConfig = new DatacenterCharacteristics_Cpu(dc.getArchitecture(), 
+						dc.getOs(), 
+						dc.getVmm(), 
+						mList, 
+						time_zone, 
+						dc.getCostPerProcessor(),
+						dc.getCostPerMem(),
+						dc.getCostPerStorage(),
+						dc.getCostPerBw());
+				
+				try {
+					datacenter = new DataCenter_Cpu(dc.getName(), resConfig, new SimpleVMProvisioner_Cpu(), storageList);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return datacenter;
+	}
 
 	@SuppressWarnings("unchecked")
 	private DataCenter createDatacenter(DataCenterUIElement dc) {
-
-		MachineList mList = new MachineList();
+		
+		VMMAllocationPolicy vmPolicy;
+		DataCenter datacenter = null;
+		double time_zone = WorldGeometry.getInstance().getTimeZone(dc.getRegion());
+		LinkedList storageList = new LinkedList(); //we are not adding SAN devices by now
 		
 		for (int mcNo = 0; mcNo < dc.getMachineList().size(); mcNo++){
-			MachineUIElement mc = dc.getMachineList().get(mcNo);
 			
+			MachineUIElement mc = dc.getMachineList().get(mcNo);
+			MachineList mList = new MachineList();
 			PEList peList1 = new PEList();
 			for (int i = 0; i < mc.getProcessors(); i++){
 				peList1.add(new PE(i, mc.getSpeed()));
 			}
 			
-			
-			VMMAllocationPolicy vmPolicy;
 			if (mc.getVmAllocationPolicy().equals(MachineUIElement.VmAllocationPolicy.TIME_SHARED)){
 				vmPolicy = new TimeSharedAllocationPolicy(peList1); 
 			} else if (mc.getVmAllocationPolicy().equals(MachineUIElement.VmAllocationPolicy.SPACE_SHARED)){
@@ -367,35 +426,33 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 			}
 			
 			Host h = new Host(mcNo, 
-							  mc.getMemory(), 
-							  mc.getStorage(), 
-							  mc.getBw(), 
-							  peList1,
-							  new SimpleMemoryProvisioner(), 
-							  new SimpleBWProvisioner(),
-							  vmPolicy);
+				  mc.getMemory(), 
+				  mc.getStorage(), 
+				  mc.getBw(), 
+				  peList1,
+				  new SimpleMemoryProvisioner(), 
+				  new SimpleBWProvisioner(),
+				  vmPolicy);
+			
 			mList.add(h);
+			
+			DatacenterCharacteristics resConfig = new DatacenterCharacteristics(dc.getArchitecture(), 
+					dc.getOs(), 
+					dc.getVmm(), 
+					mList, 
+					time_zone, 
+					dc.getCostPerProcessor(),
+					dc.getCostPerMem(),
+					dc.getCostPerStorage(),
+					dc.getCostPerBw());
+			
+			try {
+				datacenter = new DataCenter(dc.getName(), resConfig, new SimpleVMProvisioner(), storageList);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		
-		double time_zone = WorldGeometry.getInstance().getTimeZone(dc.getRegion());
-		LinkedList storageList = new LinkedList(); //we are not adding SAN devices by now
-
-		DatacenterCharacteristics resConfig = new DatacenterCharacteristics(dc.getArchitecture(), 
-																			dc.getOs(), 
-																			dc.getVmm(), 
-																			mList, 
-																			time_zone, 
-																			dc.getCostPerProcessor(),
-																			dc.getCostPerMem(),
-																			dc.getCostPerStorage(),
-																			dc.getCostPerBw());
-		DataCenter datacenter = null;
-		try {
-			datacenter = new DataCenter(dc.getName(), resConfig, new SimpleVMProvisioner(), storageList);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
 		return datacenter;
 	}
 

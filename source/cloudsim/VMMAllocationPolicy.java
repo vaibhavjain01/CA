@@ -23,6 +23,7 @@ import gridsim.PEList;
 public abstract class VMMAllocationPolicy {
 	
 	PEList pelist;
+	PEList_Cpu pelistcpu;
 
 	/**
 	 * Creates a new HostAllocationPolicy
@@ -32,6 +33,10 @@ public abstract class VMMAllocationPolicy {
 	 */
 	public VMMAllocationPolicy(PEList pelist) {
 		this.pelist = pelist;
+	}
+	
+	public VMMAllocationPolicy(PEList_Cpu pelistcpu) {
+		this.pelistcpu = pelistcpu;
 	}
 	
 	/**

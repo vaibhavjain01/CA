@@ -124,7 +124,8 @@ public class MachineUIElement implements Serializable {
 		TIME_SHARED,
 		SPACE_SHARED,
 		TIME_SHARED_W_PRIORITY,
-		TIMS_SPACE_SHARED
+		TIMS_SPACE_SHARED,
+		CPU_SHARED,
 	}
 	
 	
