@@ -28,6 +28,7 @@ import cloudsim.DatacenterCharacteristics;
 import cloudsim.DatacenterCharacteristics_Cpu;
 import cloudsim.Host;
 import cloudsim.Host_Cpu;
+import cloudsim.IDataCenter;
 import cloudsim.MachineList_Cpu;
 import cloudsim.PEList_Cpu;
 import cloudsim.PE_Cpu;
@@ -75,7 +76,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 
 	private final ObservableList<DataCenterUIElement> dataCenters;
 	private List<DatacenterController> dcbs;
-	private List<DataCenter> dcs;
+	private List<IDataCenter> dcs;
 	private final ObservableList<UserBaseUIElement> userBases;
 	private List<UserBase> ubs;
 	private double simulationTime;
@@ -170,7 +171,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 		
 		// Create Datacenters and Controllers
 		dcbs  = new ArrayList<DatacenterController>();
-		dcs =  new ArrayList<DataCenter>();
+		dcs =  new ArrayList<IDataCenter>();
 		for (DataCenterUIElement d : dataCenters) {
 			if (d.isAllocated()){
 				DataCenter dc = createDatacenter(d);
@@ -275,7 +276,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 		results.put(Constants.DC_OVER_LOADING_STATS, dcLoadingStats);
 		results.put(Constants.COSTS, costs);
 		
-		for (DataCenter dc : dcs){
+		for (IDataCenter dc : dcs){
 			dc.printDebts();
 		}
 
@@ -309,6 +310,168 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 		fireCloudSimEvent(cloudSimEvent);
 
 	}
+	
+	
+	/**
+	 * Creates and runs the simulation from the configuration obtained by the GUI.
+	 */
+	public void runSimulationCpu() throws Exception {
+		System.out.println("Starting Simulation...");
+	
+		//Set up stuff
+		int num_user = 1; // number of grid users
+		Calendar calendar = Calendar.getInstance();
+		boolean trace_flag = false; // mean trace GridSim events
+		String[] exclude_from_file = { "" };
+		String[] exclude_from_processing = { "" };
+		String report_name = null;
+
+		//Initialize GridSim
+		GridSim.init(num_user, calendar, trace_flag, exclude_from_file,
+				exclude_from_processing, report_name);
+		
+		// Create Datacenters and Controllers
+		dcbs  = new ArrayList<DatacenterController>();
+		dcs =  new ArrayList<IDataCenter>();
+		for (DataCenterUIElement d : dataCenters) {
+			if (d.isAllocated()){
+				DataCenter_Cpu dc = createDatacenterCpu(d);
+				DatacenterController controller = createBroker(d.getName(), 	
+														       d.getRegion(), 
+														       d.getCostPerProcessor(), 
+														       d.getCostPerBw());
+				dcbs.add(controller);
+				dcs.add(dc);
+				
+				int brokerId = controller.get_id();
+				vmlist = createVM(brokerId, d.getVmAllocation().getVmCount());
+				controller.submitVMList(vmlist);
+			}
+		}
+		
+		//Create user bases
+		ubs  = new ArrayList<UserBase>();
+		for (UserBaseUIElement ub : userBases) {
+			UserBase userBase = new UserBase(ub.getName(),
+											 ub.getRegion(),
+											 ub.getReqPerHrPerUser(),
+											 new int[]{ub.getPeakHoursStart(), ub.getPeakHoursEnd()}, 
+											 ub.getPeakUserCount(), 
+											 ub.getOffPeakUserCount(),
+											 ub.getReqSize(),
+											 userGroupingFactor,
+											 instructionLengthPerRequest);
+			ubs.add(userBase);
+		}
+
+		//The Internet
+		internet = new Internet(progressListener);
+		
+		CloudAppServiceBroker serviceBroker;
+		if (serviceBrokerPolicy.equals(Constants.BROKER_POLICY_PROXIMITY)){
+			serviceBroker = new ServiceProximityServiceBroker();
+		} else if (serviceBrokerPolicy.equals(Constants.BROKER_POLICY_DYNAMIC)){
+			serviceBroker = new DynamicServiceBroker(dcbs);
+		} else {
+			serviceBroker = new BestResponseTimeServiceBroker();
+		}
+		internet.addServiceBroker(DEFAULT_APP_ID, serviceBroker); 				
+		
+		//Set the simulation duration
+		Sim_system.set_termination_condition(Sim_system.TIME_ELAPSED, simulationTime, false);
+		
+		//Start the simulation
+		GridSim.startGridSimulation();
+		
+
+		// Comes here when the simulation has completed.
+		// Gather the results and package them for the results screen
+		results = new HashMap<String, Object>();
+		results.put(Constants.SIMULATION_COMPLETED_TIME, new Date());
+		
+		Map<String, HourlyEventCounter> dcArrivalStats = new HashMap<String, HourlyEventCounter>();
+		Map<String, HourlyEventCounter> dcLoadingStats = new HashMap<String, HourlyEventCounter>();
+		Map<String, SimMeasure> dcProcTimes = new TreeMap<String, SimMeasure>();
+		Map<String, Map<String, Double>> costs = new HashMap<String, Map<String,Double>>();
+		HourlyEventCounter hrlyArrivalStat = null;
+		double vmCost, dataCost, totalCost;
+		
+		for (DatacenterController dcb : dcbs) {
+			hrlyArrivalStat = dcb.getHourlyArrival();				
+			String dcName = dcb.get_name().substring(0, dcb.get_name().indexOf("-Broker"));
+			String dcbName = dcName;
+			dcArrivalStats.put(dcbName, hrlyArrivalStat);
+
+			Map<String, Double> dcCosts = new HashMap<String, Double>();
+			vmCost = dcb.getVmCost();
+			dcCosts.put(Constants.VM_COST, vmCost);				
+			dataCost = dcb.getDataTransferCost();
+			dcCosts.put(Constants.DATA_COST, dataCost);
+			totalCost = vmCost + dataCost;
+			dcCosts.put(Constants.TOTAL_COST, totalCost);
+			
+			costs.put(dcName, dcCosts);
+			
+			Sim_stat stat = dcb.get_stat();
+			List res = stat.get_measures();
+			for (Object o : res) {
+				Object[] oArray = (Object[]) o;
+				String measure = (String) oArray[0];
+
+				SimMeasure m = new SimMeasure();
+				m.setName(measure);
+				m.setEntityName(dcName);
+				m.setType(MEASURE_TYPE_DC_PROCESSING_TIME);
+				m.setAvg(stat.average(measure));
+				m.setMin(stat.minimum(measure));
+				m.setMax(stat.maximum(measure));
+				m.setCount(dcb.getAllRequestsProcessed());
+
+				dcProcTimes.put(dcName + "||" + measure, m);
+			}
+			
+			printVmAllocations(dcName, dcb.getVmAllocationStats());
+		}
+		results.put(Constants.DC_PROCESSING_TIME_STATS, dcProcTimes);
+		results.put(Constants.DC_ARRIVAL_STATS, dcArrivalStats);
+		results.put(Constants.DC_OVER_LOADING_STATS, dcLoadingStats);
+		results.put(Constants.COSTS, costs);
+		
+		for (IDataCenter dc : dcs){
+			dc.printDebts();
+		}
+
+		Map<String, SimMeasure> ubResults = new TreeMap<String, SimMeasure>();
+		for (UserBase ub : ubs) {
+			Sim_stat stat = ub.get_stat();
+			String ubName = ub.get_name();
+			
+			List res = stat.get_measures();
+			for (Object o : res) {
+				Object[] oArray = (Object[]) o;
+				String measure = (String) oArray[0];
+
+				SimMeasure m = new SimMeasure();
+				m.setName(measure);
+				m.setEntityName(ubName);
+				m.setType(MEASURE_TYPE_USER_BASE_RESPONSE);
+				m.setAvg(stat.average(measure));
+				m.setMin(stat.minimum(measure));
+				m.setMax(stat.maximum(measure));
+				m.setCount(ub.getResponsesReceived());
+
+				ubResults.put(ubName + "||" + measure, m);
+			}
+		}
+		results.put(Constants.UB_STATS, ubResults);
+		
+		//Finish off simulation
+		System.out.println("Simulation finished at " + GridSim.clock());
+		CloudSimEvent cloudSimEvent = new CloudSimEvent(CloudSimEvents.EVENT_SIMULATION_ENDED);
+		fireCloudSimEvent(cloudSimEvent);
+
+	}
+	
 	
 	private void printVmAllocations(String dcName, Map<Integer, Integer> list){
 		System.out.println("************ Vm allocations in " + dcName);

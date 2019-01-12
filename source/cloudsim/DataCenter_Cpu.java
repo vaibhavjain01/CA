@@ -39,7 +39,7 @@ import java.util.Set;
  * @since        CloudSim Toolkit 1.0 Beta
  * @invariant $none
  */
-public class DataCenter_Cpu extends CloudSim {
+public class DataCenter_Cpu extends CloudSim implements IDataCenter {
 	
 	protected DatacenterCharacteristics_Cpu resource_;
     protected String regionalGISName_;
