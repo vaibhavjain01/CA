@@ -10,6 +10,7 @@ import cloudsim.ext.GeoLocatable;
 import cloudsim.ext.InternetCharacteristics;
 import cloudsim.ext.UserBase;
 import cloudsim.ext.datacenter.DatacenterController;
+import cloudsim.ext.datacenter.IDatacenterController;
 
 /**
  * Implements {@link CloudAppServiceBroker} in a way to optimise response time. 
@@ -45,7 +46,7 @@ public class BestResponseTimeServiceBroker extends ServiceProximityServiceBroker
 		String name;
 		
 		for (GeoLocatable entity : allInternetEntities){
-			if (entity instanceof DatacenterController){
+			if (entity instanceof IDatacenterController){
 				region = entity.getRegion();
 				name = entity.get_name();
 				allDataCenters.put(name, region);

@@ -46,6 +46,8 @@ import cloudsim.VMMAllocationPolicy;
 import cloudsim.VirtualMachine;
 import cloudsim.VirtualMachineList;
 import cloudsim.ext.datacenter.DatacenterController;
+import cloudsim.ext.datacenter.DatacenterController_Cpu;
+import cloudsim.ext.datacenter.IDatacenterController;
 import cloudsim.ext.event.BaseCloudSimObservable;
 import cloudsim.ext.event.CloudSimEvent;
 import cloudsim.ext.event.CloudSimEventListener;
@@ -75,7 +77,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 	private static VirtualMachineList vmlist;
 
 	private final ObservableList<DataCenterUIElement> dataCenters;
-	private List<DatacenterController> dcbs;
+	private List<IDatacenterController> dcbs;
 	private List<IDataCenter> dcs;
 	private final ObservableList<UserBaseUIElement> userBases;
 	private List<UserBase> ubs;
@@ -121,13 +123,15 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 														 DEFAULT_MC_BW,
 														 DEFAULT_MC_PROCESSORS,
 														 DEFAULT_MC_SPEED,
-														 MachineUIElement.VmAllocationPolicy.TIME_SHARED);
+														 // Mousa MachineUIElement.VmAllocationPolicy.TIME_SHARED);
+														 MachineUIElement.VmAllocationPolicy.CPU_SHARED);
 		MachineUIElement machine2 = new MachineUIElement(DEFAULT_MC_MEMORY,
 														 DEFAULT_MC_STORAGE,
 														 DEFAULT_MC_BW,
 														 DEFAULT_MC_PROCESSORS,
 														 DEFAULT_MC_SPEED,
-														 MachineUIElement.VmAllocationPolicy.TIME_SHARED );
+														// Mousa MachineUIElement.VmAllocationPolicy.TIME_SHARED);
+														 MachineUIElement.VmAllocationPolicy.CPU_SHARED);
 		List<MachineUIElement> machineList = new ArrayList<MachineUIElement>();
 		machineList.add(machine1);
 		machineList.add(machine2);
@@ -170,7 +174,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 				exclude_from_processing, report_name);
 		
 		// Create Datacenters and Controllers
-		dcbs  = new ArrayList<DatacenterController>();
+		dcbs  = new ArrayList<IDatacenterController>();
 		dcs =  new ArrayList<IDataCenter>();
 		for (DataCenterUIElement d : dataCenters) {
 			if (d.isAllocated()){
@@ -235,7 +239,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 		HourlyEventCounter hrlyArrivalStat = null;
 		double vmCost, dataCost, totalCost;
 		
-		for (DatacenterController dcb : dcbs) {
+		for (IDatacenterController dcb : dcbs) {
 			hrlyArrivalStat = dcb.getHourlyArrival();				
 			String dcName = dcb.get_name().substring(0, dcb.get_name().indexOf("-Broker"));
 			String dcbName = dcName;
@@ -331,12 +335,12 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 				exclude_from_processing, report_name);
 		
 		// Create Datacenters and Controllers
-		dcbs  = new ArrayList<DatacenterController>();
+		dcbs  = new ArrayList<IDatacenterController>();
 		dcs =  new ArrayList<IDataCenter>();
 		for (DataCenterUIElement d : dataCenters) {
 			if (d.isAllocated()){
 				DataCenter_Cpu dc = createDatacenterCpu(d);
-				DatacenterController controller = createBroker(d.getName(), 	
+				DatacenterController_Cpu controller = createBroker_Cpu(d.getName(), 	
 														       d.getRegion(), 
 														       d.getCostPerProcessor(), 
 														       d.getCostPerBw());
@@ -348,7 +352,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 				controller.submitVMList(vmlist);
 			}
 		}
-		
+		System.out.println("VJ " + dcbs.size() + "," + dcs.size());
 		//Create user bases
 		ubs  = new ArrayList<UserBase>();
 		for (UserBaseUIElement ub : userBases) {
@@ -396,7 +400,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 		HourlyEventCounter hrlyArrivalStat = null;
 		double vmCost, dataCost, totalCost;
 		
-		for (DatacenterController dcb : dcbs) {
+		for (IDatacenterController dcb : dcbs) {
 			hrlyArrivalStat = dcb.getHourlyArrival();				
 			String dcName = dcb.get_name().substring(0, dcb.get_name().indexOf("-Broker"));
 			String dcbName = dcName;
@@ -557,6 +561,9 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 					e.printStackTrace();
 				}
 			}
+			else {
+				System.out.println("INCORRECT POLICY");
+			}
 		}
 		return datacenter;
 	}
@@ -634,6 +641,26 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 												  costPerDataGB,
 												  dcRequestGroupingFactor,
 												  loadBalancePolicy);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		return broker;
+	}
+	
+	private DatacenterController_Cpu createBroker_Cpu(String namePrefix, 
+					 int region, 
+					 double costPerVmHour,
+					 double costPerDataGB) {
+		
+		DatacenterController_Cpu broker = null;
+		try {
+			broker = new DatacenterController_Cpu(namePrefix, 
+			  region,
+			  costPerVmHour,
+			  costPerDataGB,
+			  dcRequestGroupingFactor,
+			  loadBalancePolicy);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;

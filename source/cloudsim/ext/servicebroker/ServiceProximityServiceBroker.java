@@ -8,6 +8,7 @@ import java.util.Map;
 import cloudsim.ext.GeoLocatable;
 import cloudsim.ext.InternetCharacteristics;
 import cloudsim.ext.datacenter.DatacenterController;
+import cloudsim.ext.datacenter.IDatacenterController;
 
 public class ServiceProximityServiceBroker implements CloudAppServiceBroker {
 
@@ -24,7 +25,7 @@ public class ServiceProximityServiceBroker implements CloudAppServiceBroker {
 		int region;
 		
 		for (GeoLocatable entity : allInternetEntities){
-			if (entity instanceof DatacenterController){
+			if (entity instanceof IDatacenterController){
 				region = entity.getRegion();
 				List<String> l = regionalDataCenterIndex.get(region);
 				if (l == null){

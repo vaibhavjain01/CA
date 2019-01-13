@@ -10,7 +10,9 @@ import java.util.Map;
 
 import cloudsim.DataCenter;
 import cloudsim.DatacenterBroker;
+import cloudsim.DatacenterBroker_Cpu;
 import cloudsim.DatacenterCharacteristics;
+import cloudsim.DatacenterCharacteristics_Cpu;
 import cloudsim.DatacenterTags;
 import cloudsim.VMCharacteristics;
 import cloudsim.VirtualMachine;
@@ -40,7 +42,7 @@ import gridsim.GridSimTags;
  * @author Bhathiya Wickremasinghe
  *
  */
-public class DatacenterController extends DatacenterBroker implements GeoLocatable,
+public class DatacenterController_Cpu extends DatacenterBroker_Cpu implements GeoLocatable,
 																		  CloudsimObservable,
 																		  Constants,
 																		  IDatacenterController {
@@ -66,7 +68,7 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 	private int allRequestsProcessed = 0;
 		
 	/** Constructor. */
-	public DatacenterController(String name, 
+	public DatacenterController_Cpu(String name, 
 									int region, 
 									double costPerVmHour, 
 									double costPerDataGB,
@@ -101,11 +103,11 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 		processingCloudletStatuses = new HashMap<Integer, Long[]>();
 		
 		if (loadBalancePolicy.equals(Constants.LOAD_BALANCE_ACTIVE)){
-			this.loadBalancer = new ActiveVmLoadBalancer(this);
+			this.loadBalancer = new ActiveVmLoadBalancer_Cpu(this);
 		} else if (loadBalancePolicy.equals(Constants.LOAD_BALANCE_POLICY_RR)){
 			this.loadBalancer = new RoundRobinVmLoadBalancer(vmStatesList);
 		} else { //i.e. if (loadBalancePolicy.equals(Constants.LOAD_BALANCE_THROTTLED))
-			this.loadBalancer = new ThrottledVmLoadBalancer(this);
+			this.loadBalancer = new ThrottledVmLoadBalancer_Cpu(this);
 		}
 		
 	}
@@ -130,7 +132,7 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 		//initilize fields
 		this.datacenters= 1;
 		this.datacenterID=new int[1];
-		this.datacenterChar=new DatacenterCharacteristics[1];
+		this.datacenterChar=new DatacenterCharacteristics_Cpu[1];
 		datacenterChar[0] = null;
 		
 		//queries datacenters about their characteristics
@@ -421,10 +423,6 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 		return get_name().substring(0, get_name().indexOf("-Broker"));
 	}
 
-	public String get_name() {
-		return super.get_name();
-	}
-	
 	public double getTotalCost(){
 		return getDataTransferCost() + getVmCost();
 	}
@@ -508,6 +506,9 @@ public class DatacenterController extends DatacenterBroker implements GeoLocatab
 		return allRequestsProcessed;
 	}
 	
+	public String get_name() {
+		return super.get_name();
+	}
 	public Sim_stat get_stat() {
 		return super.get_stat();
 	}

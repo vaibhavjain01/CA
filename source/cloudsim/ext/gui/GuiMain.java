@@ -324,7 +324,8 @@ private static final String CMD_ABOUT = "About";
 				Thread t = new Thread(){
 					public void run(){
 						try {
-							simulation.runSimulation();
+							// Mousa simulation.runSimulation();
+							simulation.runSimulationCpu();
 							showSimulationCompleteMessage();
 						} catch (Exception e) {
 							JOptionPane.showMessageDialog(GuiMain.this, "Encountered an unexpected error" + e.getMessage());

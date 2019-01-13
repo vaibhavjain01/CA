@@ -7,6 +7,7 @@ import java.util.Map;
 import cloudsim.CloudSim;
 import cloudsim.ext.InternetCharacteristics;
 import cloudsim.ext.datacenter.DatacenterController;
+import cloudsim.ext.datacenter.IDatacenterController;
 import eduni.simjava.Sim_system;
 
 /**
@@ -19,16 +20,16 @@ public class DynamicServiceBroker extends ServiceProximityServiceBroker
 											implements CloudAppServiceBroker {
 	
 	private Map<String, Double> bestResponseTimes;
-	private Map<String, DatacenterController> dataCenters;
+	private Map<String, IDatacenterController> dataCenters;
 	private int maxVms = 100;
 	
-	public DynamicServiceBroker(List<DatacenterController> dcbs){
+	public DynamicServiceBroker(List<IDatacenterController> dcbs){
 		super();
 		
 		bestResponseTimes = new HashMap<String, Double>();
 		
-		dataCenters = new HashMap<String, DatacenterController>();
-		for (DatacenterController dcb : dcbs){
+		dataCenters = new HashMap<String, IDatacenterController>();
+		for (IDatacenterController dcb : dcbs){
 			dataCenters.put(dcb.get_name(), dcb);
 		}
 		
@@ -60,7 +61,7 @@ public class DynamicServiceBroker extends ServiceProximityServiceBroker
 					if (currLatency <= bestSoFar){
 						bestResponseTimes.put(dc, currLatency);
 					} else {
-						DatacenterController dcb = dataCenters.get(dc);
+						IDatacenterController dcb = dataCenters.get(dc);
 						if (dcb.getVmStatesList().size() <= maxVms){ 
 							dcb.createNewVm();
 						}
