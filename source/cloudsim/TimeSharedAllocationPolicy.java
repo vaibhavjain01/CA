@@ -95,10 +95,11 @@ public class TimeSharedAllocationPolicy extends VMMAllocationPolicy {
 			capacity/=pesInUse;
 
 			int pes = this.peAllocationMap.get(userId+"-"+vmId);
+			
 			for(int i=0;i<pes;i++){
 				myShare[i]=capacity;
 			}
-
+			
 			return myShare;		
 	}
 

@@ -55,6 +55,7 @@ public class CpuSharedAllocationPolicy extends VMMAllocationPolicy {
 	public synchronized boolean allocatePEsForVM(VMCharacteristics vmcharacteristics){
 		peAllocationMap.put(vmcharacteristics.getUserId()+"-"+vmcharacteristics.getVmId(),vmcharacteristics.getCpus());
 		pesInUse+=vmcharacteristics.getCpus();
+		System.out.println("PE IN USE " + pesInUse);
 		return true;
 	}
 
@@ -93,12 +94,13 @@ public class CpuSharedAllocationPolicy extends VMMAllocationPolicy {
 			}
 			
 			capacity/=pesInUse;
-
+			
 			int pes = this.peAllocationMap.get(userId+"-"+vmId);
-			for(int i=0;i<pes;i++){
-				myShare[i]=capacity;
+			for(int i=0;i<pelistcpu.size();i++){
+				for(int j = 0; j < pes; j++) {
+					myShare[i]+=capacity;
+				}
 			}
-
 			return myShare;		
 	}
 

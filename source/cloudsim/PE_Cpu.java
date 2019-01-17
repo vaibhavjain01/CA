@@ -7,6 +7,7 @@ public class PE_Cpu extends PE{
 	
 	public PE_Cpu(int id, int MIPSRating) {
 		super(id, MIPSRating);
+		System.out.println("PECPU WITH SPEED : " + MIPSRating);
 		// TODO Auto-generated constructor stub
 	}
 

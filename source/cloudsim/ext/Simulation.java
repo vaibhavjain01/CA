@@ -19,6 +19,7 @@ import java.util.TreeMap;
 
 import javax.swing.JOptionPane;
 
+import cloudsim.CPUSharedVMScheduler;
 import cloudsim.Cloudlet;
 import cloudsim.CloudletList;
 import cloudsim.CpuSharedAllocationPolicy;
@@ -123,6 +124,7 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 														 DEFAULT_MC_BW,
 														 DEFAULT_MC_PROCESSORS,
 														 DEFAULT_MC_SPEED,
+														 // MachineUIElement.VmAllocationPolicy.TIME_SHARED);
 														 // Mousa MachineUIElement.VmAllocationPolicy.TIME_SHARED);
 														 MachineUIElement.VmAllocationPolicy.CPU_SHARED);
 		MachineUIElement machine2 = new MachineUIElement(DEFAULT_MC_MEMORY,
@@ -130,7 +132,8 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 														 DEFAULT_MC_BW,
 														 DEFAULT_MC_PROCESSORS,
 														 DEFAULT_MC_SPEED,
-														// Mousa MachineUIElement.VmAllocationPolicy.TIME_SHARED);
+														 // MachineUIElement.VmAllocationPolicy.TIME_SHARED);
+														 // Mousa MachineUIElement.VmAllocationPolicy.TIME_SHARED);
 														 MachineUIElement.VmAllocationPolicy.CPU_SHARED);
 		List<MachineUIElement> machineList = new ArrayList<MachineUIElement>();
 		machineList.add(machine1);
@@ -348,11 +351,11 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 				dcs.add(dc);
 				
 				int brokerId = controller.get_id();
-				vmlist = createVM(brokerId, d.getVmAllocation().getVmCount());
+				vmlist = createVMCpu(brokerId, d.getVmAllocation().getVmCount());
 				controller.submitVMList(vmlist);
 			}
 		}
-		System.out.println("VJ " + dcbs.size() + "," + dcs.size());
+		
 		//Create user bases
 		ubs  = new ArrayList<UserBase>();
 		for (UserBaseUIElement ub : userBases) {
@@ -482,6 +485,37 @@ public class Simulation extends BaseCloudSimObservable implements Constants {
 		for (Integer vm : list.keySet()){
 			System.out.println(vm + "->" + list.get(vm));
 		} 
+	}
+	
+	@SuppressWarnings("unchecked")
+	private VirtualMachineList createVMCpu(int userID, int vms) {
+
+		// Creates a container to store VMs. This list is passed to the broker
+		// later
+		VirtualMachineList list = new VirtualMachineList();
+
+		//VM Parameters
+		long size = 10000; //image size (MB)
+		int memory = 512; //vm memory (MB)
+		long bw = 1000;
+		int vcpus = 2; //number of cpus
+		int priority = 1;
+		String vmm = "Xen"; //VMM name
+
+		//create VMs
+		VirtualMachine[] vm = new VirtualMachine[vms];
+		System.out.println("CREATING THIS MUCH VMS " + vms);
+		for (int i = 0; i < vms; i++) {
+			vm[i] = new VirtualMachine(new VMCharacteristics(i, userID, size,
+					memory, bw, vcpus, priority, vmm,
+					new CPUSharedVMScheduler()));
+			//for creating a VM with a space shared scheduling policy for cloudlets:
+			//vm[i] = new VirtualMachine(new VMCharacteristics(i,userID,size,memory,bw,vcpus,vmm,new SpaceSharedVMScheduler()));
+
+			list.add(vm[i]);
+		}
+
+		return list;
 	}
 
 	@SuppressWarnings("unchecked")

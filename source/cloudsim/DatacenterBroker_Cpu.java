@@ -78,8 +78,8 @@ public class DatacenterBroker_Cpu extends CloudSim {
 	 */
 	@SuppressWarnings("unchecked")
 	public void submitVMList(VirtualMachineList list){
-		
 		Iterator iter = list.iterator();
+		System.out.println("Submit called " + list.size());
 		while(iter.hasNext()){
 			
 			VirtualMachine vm = (VirtualMachine) iter.next();
